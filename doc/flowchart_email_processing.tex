@@ -1,0 +1,69 @@
+\documentclass{article}
+
+\usepackage[latin1]{inputenc}
+\usepackage{tikz}
+\usepackage[left=1cm,right=1cm,top=1.5cm,bottom=1cm,includeheadfoot]{geometry} 
+\usetikzlibrary{shapes,arrows}
+\begin{document}
+\pagestyle{empty}
+
+
+% Define block styles
+\tikzstyle{decision} = [diamond, draw, fill=blue!20, 
+    text width=4.5em, text badly centered, node distance=3cm, inner sep=0pt]
+\tikzstyle{block} = [rectangle, draw, fill=blue!20, 
+    text width=5em, text centered, rounded corners, minimum height=4em]
+\tikzstyle{line} = [draw, -latex']
+\tikzstyle{cloud} = [draw, ellipse,fill=red!20, node distance=3cm,
+    minimum height=2em]
+    
+\begin{tikzpicture}[node distance = 4cm, auto]
+    % Place nodes
+    \node [decision] (References) {In-Reply-To or References};
+    \node [cloud, left of=References] (E-Mail) {E-Mail};
+    \node [block, right of=References] (New-Ticket) {Create new Ticket};
+    \node [block, below of=References] (identify) {Get Ticket - ID};
+    \node [decision, below of=identify] (Admin) {from matches admin of queue};
+    
+    \node [block, left of=Admin] (add-Message) {Add message to ticket};
+    
+    \node [decision, below of=Admin, node distance=5cm] (Command) {First line is a command};
+    \node [decision, left of=Command, node distance=4cm] (autoclose) {Auto close};
+
+    \node [block, left of=autoclose] (close) {close Ticket};
+    
+    
+    \node [cloud, above of=add-Message] (end) {end};
+    
+    
+    \node [block, below of=Command] (process-command) {process command};
+    
+    \node [cloud, below of=process-command] (end2) {end};
+    
+    % Draw edges
+    \path [line] (E-Mail) -- (References);
+    \path [line] (References) -- node {yes} (identify) ;
+    \path [line] (References) -- node {no} (New-Ticket) ;
+    \path [line] (identify) -| node [near start] {no ticket id found} (New-Ticket) ;
+    
+    \path [line] (identify) -- (Admin);
+    \path [line] (Admin) -- node [near start] {No} (add-Message);
+    \path [line] (Admin) -- node [near start] {Yes} (Command);
+
+    \path [line] (Command) -- node [near start] {No} (autoclose) ;
+    \path [line] (autoclose) -- node [near start] {No} (add-Message) ;
+    \path [line] (autoclose) -- node [near start] {Yes} (close) ;
+    
+    \path [line] (close) |- (add-Message) ;
+    
+    \path [line] (add-Message) -- (end);
+    
+    \path [line] (Command) -- (process-command);
+    
+    \path [line] (process-command) -- (end2);
+    
+    
+\end{tikzpicture}
+
+
+\end{document}
