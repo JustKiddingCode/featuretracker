@@ -20,8 +20,14 @@
 \begin{tikzpicture}[node distance = 4cm, auto]
     % Place nodes
     \node [decision] (References) {In-Reply-To or References};
+
+    \node [decision, right of=References,node distance=5cm] (Subject) {Subject matches command };
+    
+    \node [block, right of=Subject] (process2) {Processing Command};
+    \node [cloud, below of=process2] (end3) {end};
+
     \node [cloud, left of=References] (E-Mail) {E-Mail};
-    \node [block, right of=References] (New-Ticket) {Create new Ticket};
+    \node [block, below of=Subject] (New-Ticket) {Create new Ticket};
     \node [block, below of=References] (identify) {Get Ticket - ID};
     \node [decision, below of=identify] (Admin) {from matches admin of queue};
     
@@ -41,10 +47,14 @@
     \node [cloud, below of=process-command] (end2) {end};
     
     % Draw edges
+
+    \path [line] (Subject) -- node {yes} (process2);
+    \path [line] (process2) -- (end3);
+
     \path [line] (E-Mail) -- (References);
     \path [line] (References) -- node {yes} (identify) ;
-    \path [line] (References) -- node {no} (New-Ticket) ;
-    \path [line] (identify) -| node [near start] {no ticket id found} (New-Ticket) ;
+    \path [line] (References) -- node {no} (Subject) ;
+    \path [line] (identify) -- node  {no ticket id found} (New-Ticket) ;
     
     \path [line] (identify) -- (Admin);
     \path [line] (Admin) -- node [near start] {No} (add-Message);
@@ -61,8 +71,10 @@
     \path [line] (Command) -- (process-command);
     
     \path [line] (process-command) -- (end2);
-    
-    
+
+    \path [line] (Subject) -- node {No} (New-Ticket);    
+   
+ 
 \end{tikzpicture}
 
 
