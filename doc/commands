@@ -1,0 +1,15 @@
+List of commands directly:
+* list <status> <queue>
+* ticket <ticket-id>
+
+
+List of commands as answer to email:
+* ignore
+* queue <queue>
+* take
+
+Status:
+* open
+* taken
+* closed
+* ignored
