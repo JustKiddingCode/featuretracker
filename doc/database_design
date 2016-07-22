@@ -1,0 +1,48 @@
+-- Tickets
+
+* Ticket-ID
+* Message-IDs
+* Status
+* Queue
+* Subject
+
+
+-- Ticket and Message ID
+
+* Ticket-ID
+* Message-ID
+
+
+-- EMails
+
+* Message-ID
+* Text
+
+
+-- Status
+
+* ID
+* Namen
+
+
+-- Queue
+
+* ID
+* Namen
+* Auto Close(1)
+
+
+
+-- Queue No-Ticket
+
+* Queue-ID
+* E-Mail Regex
+
+
+-- Queue Admins
+
+* Queue-ID
+* E-Mail Regex
+
+
+(1) If set to TRUE, Ticket are closed when originator received email back
