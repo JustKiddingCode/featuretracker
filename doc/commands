@@ -1,15 +1,18 @@
 List of commands directly:
 * list <status> <queue>
 * ticket <ticket-id>
-
+* depends <ticket-id> <ticket-id>
 
 List of commands as answer to email:
 * ignore
 * queue <queue>
 * take
+* depends <ticket-id>
+
 
 Status:
 * open
+* depending
 * taken
 * closed
 * ignored
