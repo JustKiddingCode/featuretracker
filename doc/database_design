@@ -3,8 +3,10 @@
 * Ticket-ID
 * Message-IDs
 * Status
+* Status by
 * Queue
 * Subject
+* Date Opened
 
 
 -- Ticket and Message ID
