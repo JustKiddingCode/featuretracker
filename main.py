@@ -9,7 +9,7 @@ def search_ticket_id_by_references(references):
 	query = "Select TicketID FROM Link_Ticket_Message WHERE MessageID in (?)"
 
 	string_references = "'" + "','".join(references) + "'"
-	database.cursor.execute(query, (string_references))
+	database.cursor.execute(query, (string_references,))
 	val = database.cursor.fetchone()
 
 	if (val == None):
@@ -84,6 +84,7 @@ def process_email():
 	if ("Message-ID" not in email.keys()):
 		print("no message id in mail. exit")
 		sys.exit()
+	print("Processing %s" % email['Message-ID'])
 	check_existence(email['Message-ID'])
 
 	# get references
@@ -96,9 +97,11 @@ def process_email():
 		if (queue_id == -1):
 			print("Failed to determine queue. Exit")
 			sys.exit()
+		print("Create new ticket")
 		ticket_id = create_ticket(email['from'], queue_id, email['subject'])
 		save_message(email)
 		link_message_ticket(email['message-id'],ticket_id)
+
 
 	else:
 		print("References found %s" % references)
@@ -119,7 +122,8 @@ def process_email():
 			if (queue_id == -1):
 				print("Failed to determine queue. Exit")
 				sys.exit()
-
+			
+			print("Create new ticket")
 			ticket_id = create_ticket(email['from'], queue_id, email['subject'])
 			save_message(email)
 			link_message_ticket(email['message-id'],ticket_id)
@@ -127,4 +131,5 @@ def process_email():
 
 if __name__ == "__main__":
 	process_email()
-
+	database.connection.commit()
+	database.connection.close()
