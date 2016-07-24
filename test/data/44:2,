@@ -2,8 +2,8 @@ From: "Carl Worth" <cworth@cworth.org>
 To: notmuch@notmuchmail.org
 Date: Wed, 18 Nov 2009 02:43:50 -0800
 Subject: [notmuch] [PATCH] Older versions of install do not support -C.
-In-Reply-To: <1258496327-12086-1-git-send-email-jan@ryngle.com>
-References: <1258496327-12086-1-git-send-email-jan@ryngle.com>
+In-Reply-To: <ddd65cda0911172214t60d22b63hcfeb5a19ab54a39b@mail.gmail.com>
+References: <ddd65cda0911172214t60d22b63hcfeb5a19ab54a39b@mail.gmail.com>
 Message-ID: <87hbssqfix.fsf@yoom.home.cworth.org>
 
 On Tue, 17 Nov 2009 23:18:47 +0100, Jan Janak <jan at ryngle.com> wrote:
