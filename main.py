@@ -39,7 +39,7 @@ def check_existence(message_id):
 
 def save_message(email):
 	query = "INSERT INTO Emails (MessageID, Content) VALUES (?,?)"
-	database.cursor.execute(query, (email['message-id'], str(email))
+	database.cursor.execute(query, (email['message-id'], str(email)))
 
 
 def link_message_ticket(message_id, ticket_id):
@@ -50,7 +50,7 @@ def search_queue_by_email(email):
 	# TO
 	query = "SELECT QueueID FROM Message_to_Queue WHERE identifier='To' and value = ?"
 
-	database.cursor.execute(query, email['To'])
+	database.cursor.execute(query, (email['To'], ))
 	val = database.cursor.fetchone()
 	if (val == None):
 		return -1
