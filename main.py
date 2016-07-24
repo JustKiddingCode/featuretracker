@@ -48,7 +48,7 @@ def link_message_ticket(message_id, ticket_id):
 
 def search_queue_by_email(email):
 	# TO
-	query = "SELECT QueueID FROM Message_to_Queue WHERE identifier='To' and value = ?"
+	query = "SELECT QueueID FROM Message_to_Queue WHERE identifier='to' and value = ?"
 
 	database.cursor.execute(query, (email['To'], ))
 	val = database.cursor.fetchone()
@@ -66,7 +66,7 @@ def create_ticket(originator, queue_id, subject):
 		sys.exit()
 	status_id = val[0]
 
-	query = "INSERT INTO Tickets (Status, Originator, Queue, Subject, opened) VALUES (?,?,?,?, datetime('now')"
+	query = "INSERT INTO Tickets (Status, Originator, Queue, Subject, opened) VALUES (?,?,?,?, datetime('now'))"
 	database.cursor.execute(query, (status_id, originator, queue_id, subject))
 
 	#TODO: none sqlite way
@@ -84,9 +84,9 @@ def process_email():
 	if ("Message-ID" not in email.keys()):
 		print("no message id in mail. exit")
 		sys.exit()
-	
-	# get references
+	check_existence(email['Message-ID'])
 
+	# get references
 	references = get_references(email)
 
 	if (references == []):
