@@ -57,4 +57,7 @@ CREATE TABLE Link_Ticket_Message
 );
 
 
-
+INSERT INTO Status
+(
+'Open', 'Depending', 'Closed', 'Taken'
+);
