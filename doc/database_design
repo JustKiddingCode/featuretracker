@@ -8,6 +8,7 @@
 * Subject
 * Date Opened
 
+
 -- Ticket and Message ID
 
 * Ticket-ID
@@ -19,8 +20,16 @@
 * Ticket-ID
 * depends on (ticket id)
 
+
+-- EMails and Attachments
+
+* EMail ID
+* File
+
+
 -- EMails
 
+* EMail ID
 * Message-ID
 * Text
 
