@@ -6,10 +6,9 @@ import database
 
 
 def search_ticket_id_by_references(references):
-	query = "Select TicketID FROM Link_Ticket_Message WHERE MessageID in (?)"
+	query = "Select TicketID FROM Link_Ticket_Message WHERE MessageID in (%s)" % ','.join('?' * len(references))
 
-	string_references = "'" + "','".join(references) + "'"
-	database.cursor.execute(query, (string_references,))
+	database.cursor.execute(query, references)
 	val = database.cursor.fetchone()
 
 	if (val == None):
