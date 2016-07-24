@@ -74,6 +74,20 @@ def create_ticket(originator, queue_id, subject):
 	
 	return database.cursor.fetchone()[0]
 
+def get_queue_id_from_ticket_id(ticket_id):
+	query = "SELECT Queue FROM Tickets WHERE TicketID = ?"
+	database.cursor.execute(query, (ticket_id, ))
+	queue_id = database.cursor.fetchone()[0]
+
+	return queue_id
+
+def strip_to_address(from_email):
+	# output substring between < >
+	return from_email[from_email.find("<")+1:from_email.find(">")]
+
+
+def check_admin(from_email, queue_id):
+	pass
 
 def process_email():
 	email = Parser().parse(sys.stdin)
@@ -109,6 +123,12 @@ def process_email():
 
 		if (ticket_id > 0):
 			print("Ticket-Id found %s" % ticket_id)
+			queue_id = get_queue_id_from_ticket_id(ticket_id)
+
+			print("Check if admin is answering")
+			if (check_admin(strip_to_address(from_email), queue_id)):
+				pass
+
 			print("Add message to ticket")
 
 			save_message(email)
