@@ -1,3 +1,5 @@
 *.aux
 *.log
 *.tex.backup
+__pycache__
+*.db
