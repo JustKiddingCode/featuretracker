@@ -1,5 +1,5 @@
 From: "Alexander Botero-Lowry" <alex.boterolowry@gmail.com>
-To: notmuch@notmuchmail.org
+To: notmuch@notmuchmail.org, keithp@keithp.com
 Date: Wed, 18 Nov 2009 00:52:34 -0800
 Subject: [notmuch] [PATCH] Create a default notmuch-show-hook that
  highlights URLs and uses word-wrap
