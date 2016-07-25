@@ -4,7 +4,7 @@ import re
 
 
 import database
-
+import commands
 
 
 def search_ticket_id_by_references(references):
@@ -187,7 +187,12 @@ def process_email():
 				sys.exit()
 			
 			if (check_admin(strip_to_address(email['from']), queue_id)):
-				pass
+				if (email['Subject'] == "list open"):
+					query = "SELECT StatusID From Status WHERE Name=?"
+					database.cursor.execute(query, ("Open",))
+					status_id = database.cursor.fetchone()[0]
+					print(commands.list(status_id, queue_id))
+
 
 			print("Create new ticket")
 			ticket_id = create_ticket(email['from'], queue_id, email['subject'])
