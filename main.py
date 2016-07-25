@@ -119,8 +119,6 @@ def check_autoclose(queue_id):
 	database.cursor.execute(query, (queue_id, ))
 
 	val = database.cursor.fetchone() 
-	logger.debug(val)
-	logger.debug(val[0])
 	return (val[0] == 1)
 
 def check_command(email):
@@ -144,7 +142,7 @@ def process_email_no_references(email):
 				status_id = database.cursor.fetchone()[0]
 				logger.debug(list_ticket(status_id, queue_id))
 
-		logger.debug("Create new ticket")
+		logger.info("Create new ticket")
 		ticket_id = create_ticket(email['from'], queue_id, email['subject'])
 		save_message(email)
 		link_message_ticket(email['message-id'],ticket_id)
@@ -164,7 +162,7 @@ def process_email_with_ticket(email, ticket_id):
 			logger.debug("email To: %s originator: %s" % (email['To'], originator))
 
 			if (originator in email['To']) :
-				logger.debug("Auto close ticket.")
+				logger.info("Auto close ticket.")
 				query = "UPDATE Tickets SET Status = (SELECT StatusID FROM Status WHERE Name='Closed' LIMIT 1) WHERE TicketID= ?"
 				database.cursor.execute(query, (ticket_id, ))
 		
