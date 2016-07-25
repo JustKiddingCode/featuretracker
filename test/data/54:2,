@@ -1,8 +1,7 @@
 From: "Alexander Botero-Lowry" <alex.boterolowry@gmail.com>
 To: notmuch@notmuchmail.org
 Date: Wed, 18 Nov 2009 00:52:34 -0800
-Subject: [notmuch] [PATCH] Create a default notmuch-show-hook that
- highlights URLs and uses word-wrap
+Subject: list open
 Message-ID: <453867hto2p0t.fsf@fortitudo.i-did-not-set--mail-host-address--so-tickle-me>
 
 list open

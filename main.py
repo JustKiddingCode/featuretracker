@@ -1,10 +1,23 @@
 from email.parser import Parser
 import sys
 import re
-
+import logging
 
 import database
-import commands
+#import commands
+
+
+
+def list_ticket(status_id,queue_id):
+	query = "SELECT Originator, opened, Subject FROM Tickets WHERE Queue = ? AND Status= ?"
+	database.cursor.execute(query, (queue_id,status_id))
+	
+	ticket_list = ""
+
+	for row in database.cursor.fetchall():
+		ticket_list += "%s %s %s \n\n" % (row[0], row[1], row[2]) 
+	
+	return ticket_list
 
 
 def search_ticket_id_by_references(references):
@@ -35,7 +48,7 @@ def check_existence(message_id):
 	count = database.cursor.fetchone()[0]
 
 	if (count > 0):
-		print("E-Mail already in Database. Exit")
+		logger.debug("E-Mail already in Database. Exit")
 		sys.exit()
 
 def save_message(email):
@@ -63,7 +76,7 @@ def create_ticket(originator, queue_id, subject):
 	database.cursor.execute(query)
 	val = database.cursor.fetchone()
 	if (val == None):
-		print("Could not determine status id for Status Open. Exit.")
+		logger.debug("Could not determine status id for Status Open. Exit.")
 		sys.exit()
 	status_id = val[0]
 
@@ -92,10 +105,10 @@ def check_admin(from_email, queue_id):
 	query = "SELECT Email_Regex FROM Queue_Admin WHERE QueueID = ?"
 	database.cursor.execute(query, (queue_id, ))
 	
-	print("Testing for mail adress %s" % from_email) 
+	logger.debug("Testing for mail adress %s" % from_email) 
 	for line in database.cursor.fetchall():
 		regex = line[0]
-		print("Found regex: %s" % regex)
+		logger.debug("Found regex: %s" % regex)
 		if (re.match(regex, from_email)):
 			return True
 
@@ -106,8 +119,8 @@ def check_autoclose(queue_id):
 	database.cursor.execute(query, (queue_id, ))
 
 	val = database.cursor.fetchone() 
-	print(val)
-	print(val[0])
+	logger.debug(val)
+	logger.debug(val[0])
 	return (val[0] == 1)
 
 def check_command(email):
@@ -116,91 +129,90 @@ def check_command(email):
 	else:
 		firstLine = email.get_payload().splitlines()[0]
 	
-	print(firstLine)
+	logger.debug(firstLine)
+
+def process_email_no_references(email):
+		queue_id = search_queue_by_email(email)	
+		if (queue_id == -1):
+			logger.debug("Failed to determine queue. Exit")
+			sys.exit()
+		
+		if (check_admin(strip_to_address(email['from']), queue_id)):
+			if (email['Subject'] == "list open"):
+				query = "SELECT StatusID From Status WHERE Name=?"
+				database.cursor.execute(query, ("Open",))
+				status_id = database.cursor.fetchone()[0]
+				logger.debug(list_ticket(status_id, queue_id))
+
+		logger.debug("Create new ticket")
+		ticket_id = create_ticket(email['from'], queue_id, email['subject'])
+		save_message(email)
+		link_message_ticket(email['message-id'],ticket_id)
+
+def process_email_with_ticket(email, ticket_id):
+	logger.debug("Ticket-Id found %s" % ticket_id)
+	queue_id = get_queue_id_from_ticket_id(ticket_id)
+	logger.debug("Check if email is from queue-admin")
+
+	if (check_admin(strip_to_address(email['from']), queue_id)):
+		logger.debug ("An admin is answering")
+		if (check_autoclose(queue_id)):
+			logger.debug("Auto close is activated for the queue")
+			query = "SELECT Originator FROM Tickets WHERE TicketID = ?"
+			database.cursor.execute(query, (ticket_id,))
+			originator = strip_to_address(database.cursor.fetchone()[0])
+			logger.debug("email To: %s originator: %s" % (email['To'], originator))
+
+			if (originator in email['To']) :
+				logger.debug("Auto close ticket.")
+				query = "UPDATE Tickets SET Status = (SELECT StatusID FROM Status WHERE Name='Closed' LIMIT 1) WHERE TicketID= ?"
+				database.cursor.execute(query, (ticket_id, ))
+		
+		if (check_command(email)):
+			pass
+
+	
+	logger.debug("Add message to ticket")
+	save_message(email)
+	link_message_ticket(email['message-id'],ticket_id)
 
 
 def process_email():
 	email = Parser().parse(sys.stdin)
 
-	print(email.keys())
+	logger.debug(email.keys())
 	
 	if ("Message-ID" not in email.keys()):
-		print("no message id in mail. exit")
+		logger.debug("no message id in mail. exit")
 		sys.exit()
-	print("Processing %s" % email['Message-ID'])
+	logger.info("Processing %s" % email['Message-ID'])
 	check_existence(email['Message-ID'])
 
 	# get references
 	references = get_references(email)
 
 	if (references == []):
-		print("No references found.")
+		logger.debug("No references found.")
 		
-		queue_id = search_queue_by_email(email)	
-		if (queue_id == -1):
-			print("Failed to determine queue. Exit")
-			sys.exit()
-		print("Create new ticket")
-		ticket_id = create_ticket(email['from'], queue_id, email['subject'])
-		save_message(email)
-		link_message_ticket(email['message-id'],ticket_id)
-
+		process_email_no_references(email)
 
 	else:
-		print("References found %s" % references)
-		print("Search ticket id for references")
+		logger.debug("References found %s" % references)
+		logger.debug("Search ticket id for references")
 		ticket_id = search_ticket_id_by_references(references)
 
 		if (ticket_id > 0):
-			print("Ticket-Id found %s" % ticket_id)
-			queue_id = get_queue_id_from_ticket_id(ticket_id)
-
-			print("Check if email is from queue-admin")
-			if (check_admin(strip_to_address(email['from']), queue_id)):
-				print ("An admin is answering")
-				if (check_autoclose(queue_id)):
-					print("Auto close is activated for the queue")
-					query = "SELECT Originator FROM Tickets WHERE TicketID = ?"
-					database.cursor.execute(query, (ticket_id,))
-					originator = strip_to_address(database.cursor.fetchone()[0])
-					print("email To: %s originator: %s" % (email['To'], originator))
-					if (originator in email['To']) :
-						print("Auto close ticket.")
-						query = "UPDATE Tickets SET Status = (SELECT StatusID FROM Status WHERE Name='Closed' LIMIT 1) WHERE TicketID= ?"
-						database.cursor.execute(query, (ticket_id, ))
-
-				if (check_command(email)):
-					pass
-
-
-			print("Add message to ticket")
-
-			save_message(email)
-			link_message_ticket(email['message-id'],ticket_id)
-
+			process_email_with_ticket(email, ticket_id)
 		else:
-			print("No Ticket found")
-			
-			queue_id = search_queue_by_email(email)	
-			if (queue_id == -1):
-				print("Failed to determine queue. Exit")
-				sys.exit()
-			
-			if (check_admin(strip_to_address(email['from']), queue_id)):
-				if (email['Subject'] == "list open"):
-					query = "SELECT StatusID From Status WHERE Name=?"
-					database.cursor.execute(query, ("Open",))
-					status_id = database.cursor.fetchone()[0]
-					print(commands.list(status_id, queue_id))
-
-
-			print("Create new ticket")
-			ticket_id = create_ticket(email['from'], queue_id, email['subject'])
-			save_message(email)
-			link_message_ticket(email['message-id'],ticket_id)
+			logger.debug("No Ticket found")
+			process_email_no_references(email)	
 
 
 if __name__ == "__main__":
+
+	logger = logging.getLogger("featuretracker")
+	logging.basicConfig(level=logging.DEBUG)
 	process_email()
+
 	database.connection.commit()
 	database.connection.close()
