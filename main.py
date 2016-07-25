@@ -186,6 +186,9 @@ def process_email():
 				print("Failed to determine queue. Exit")
 				sys.exit()
 			
+			if (check_admin(strip_to_address(email['from']), queue_id)):
+				pass
+
 			print("Create new ticket")
 			ticket_id = create_ticket(email['from'], queue_id, email['subject'])
 			save_message(email)
