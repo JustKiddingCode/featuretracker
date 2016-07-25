@@ -1,5 +1,7 @@
 from email.parser import Parser
 import sys
+import re
+
 
 import database
 
@@ -87,7 +89,35 @@ def strip_to_address(from_email):
 
 
 def check_admin(from_email, queue_id):
-	pass
+	query = "SELECT Email_Regex FROM Queue_Admin WHERE QueueID = ?"
+	database.cursor.execute(query, (queue_id, ))
+	
+	print("Testing for mail adress %s" % from_email) 
+	for line in database.cursor.fetchall():
+		regex = line[0]
+		print("Found regex: %s" % regex)
+		if (re.match(regex, from_email)):
+			return True
+
+	return False;
+
+def check_autoclose(queue_id):
+	query = "SELECT autoclose FROM Queue WHERE QueueID = ?"
+	database.cursor.execute(query, (queue_id, ))
+
+	val = database.cursor.fetchone() 
+	print(val)
+	print(val[0])
+	return (val[0] == 1)
+
+def check_command(email):
+	if (email.is_multipart()):
+		firstLine = email.get_payload(0).as_string().splitlines()[0]
+	else:
+		firstLine = email.get_payload().splitlines()[0]
+	
+	print(firstLine)
+
 
 def process_email():
 	email = Parser().parse(sys.stdin)
@@ -125,9 +155,23 @@ def process_email():
 			print("Ticket-Id found %s" % ticket_id)
 			queue_id = get_queue_id_from_ticket_id(ticket_id)
 
-			print("Check if admin is answering")
-			if (check_admin(strip_to_address(from_email), queue_id)):
-				pass
+			print("Check if email is from queue-admin")
+			if (check_admin(strip_to_address(email['from']), queue_id)):
+				print ("An admin is answering")
+				if (check_autoclose(queue_id)):
+					print("Auto close is activated for the queue")
+					query = "SELECT Originator FROM Tickets WHERE TicketID = ?"
+					database.cursor.execute(query, (ticket_id,))
+					originator = strip_to_address(database.cursor.fetchone()[0])
+					print("email To: %s originator: %s" % (email['To'], originator))
+					if (originator in email['To']) :
+						print("Auto close ticket.")
+						query = "UPDATE Tickets SET Status = (SELECT StatusID FROM Status WHERE Name='Closed' LIMIT 1) WHERE TicketID= ?"
+						database.cursor.execute(query, (ticket_id, ))
+
+				if (check_command(email)):
+					pass
+
 
 			print("Add message to ticket")
 
