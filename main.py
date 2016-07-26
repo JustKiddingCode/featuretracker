@@ -3,9 +3,19 @@ import sys
 import re
 import logging
 
+from email.mime.text import MIMEText
+from subprocess import Popen, PIPE
+
 import database
 #import commands
 
+#sendmail_commad = "/usr/sbin/sendmail"
+#sendmail_opts = ["-t", "-oi"]
+
+sendmail_command = "/bin/cat"
+sendmail_opts = []
+
+sendmail = [sendmail_command] + sendmail_opts
 
 
 def list_ticket(status_id,queue_id):
@@ -140,7 +150,25 @@ def process_email_no_references(email):
 				query = "SELECT StatusID From Status WHERE Name=?"
 				database.cursor.execute(query, ("Open",))
 				status_id = database.cursor.fetchone()[0]
-				logger.debug(list_ticket(status_id, queue_id))
+				email_body = list_ticket(status_id, queue_id)
+
+				# get e-mail to.
+				query = "SELECT value FROM Message_to_Queue WHERE identifier='to' and QueueID = ?"
+				database.cursor.execute(query, (queue_id, ))
+				to = database.cursor.fetchone()[0]
+
+				msg = MIMEText(email_body)
+				msg['From'] = "Featuretracker <featuretracker@fsmi.uka.de>"
+				msg['To'] = to
+				msg['Subject'] = "Open Tickets"	
+				
+				p = Popen(sendmail, stdin=PIPE, universal_newlines=True)
+				p.communicate(msg.as_string())
+			
+
+				return
+
+
 
 		logger.info("Create new ticket")
 		ticket_id = create_ticket(email['from'], queue_id, email['subject'])
