@@ -140,7 +140,8 @@ def check_command(email):
 		firstLine = email.get_payload().splitlines()[0]
 	
 	logger.debug(firstLine)
-
+	
+	return firstLine
 
 def list_open_tickets(queue_id):
 	query = "SELECT StatusID From Status WHERE Name=?"
@@ -162,53 +163,53 @@ def write_email(content, to, subject, from_mail = emailFrom):
 
 
 def process_email_no_references(email):
-		queue_id = search_queue_by_email(email)	
-		if (queue_id == -1):
-			if (email['Subject'].startswith("list open")):
-				queue_name = email['Subject'][10:]
-				query = "SELECT QueueID FROM Queue WHERE Name=?"
-				database.cursor.execute(query, (queue_name, ))
+	queue_id = search_queue_by_email(email)	
+	if (queue_id == -1):
+		if (email['Subject'].startswith("list open")):
+			queue_name = email['Subject'][10:]
+			query = "SELECT QueueID FROM Queue WHERE Name=?"
+			database.cursor.execute(query, (queue_name, ))
+			
+			res = database.cursor.fetchone()
+
+			if (res != None):
+				queue_id = res[0]
 				
-				res = database.cursor.fetchone()
+				if (check_admin(strip_to_address(email['from']), queue_id)):
+			
+					email_body = list_open_tickets(queue_id)
+					# get e-mail to.
+					query = "SELECT value FROM Message_to_Queue WHERE identifier='to' and QueueID = ?"
+					database.cursor.execute(query, (queue_id, ))
+					to = database.cursor.fetchone()[0]
+			
+					write_email(email_body, to, "Open Tickets")
 
-				if (res != None):
-					queue_id = res[0]
-					
-					if (check_admin(strip_to_address(email['from']), queue_id)):
-				
-						email_body = list_open/tickets(queue_id)
-						# get e-mail to.
-						query = "SELECT value FROM Message_to_Queue WHERE identifier='to' and QueueID = ?"
-						database.cursor.execute(query, (queue_id, ))
-						to = database.cursor.fetchone()[0]
-				
-						write_email(email_body, to, "Open Tickets")
+					return
 
-						return
+		logger.debug("Failed to determine queue. Exit")
+		sys.exit()
+	
+	if (check_admin(strip_to_address(email['from']), queue_id)):
+		if (email['Subject'] == "list open"):
+			
+			email_body = list_open_tickets(queue_id)
+			# get e-mail to.
+			query = "SELECT value FROM Message_to_Queue WHERE identifier='to' and QueueID = ?"
+			database.cursor.execute(query, (queue_id, ))
+			to = database.cursor.fetchone()[0]
+			
+			write_email(email_body, to, "Open Tickets")
+			
 
-			logger.debug("Failed to determine queue. Exit")
-			sys.exit()
-		
-		if (check_admin(strip_to_address(email['from']), queue_id)):
-			if (email['Subject'] == "list open"):
-				
-				email_body = list_open/tickets(queue_id)
-				# get e-mail to.
-				query = "SELECT value FROM Message_to_Queue WHERE identifier='to' and QueueID = ?"
-				database.cursor.execute(query, (queue_id, ))
-				to = database.cursor.fetchone()[0]
-				
-				write_email(email_body, to, "Open Tickets")
-				
-
-				return
+			return
 
 
 
-		logger.info("Create new ticket")
-		ticket_id = create_ticket(email['from'], queue_id, email['subject'])
-		save_message(email)
-		link_message_ticket(email['message-id'],ticket_id)
+	logger.info("Create new ticket")
+	ticket_id = create_ticket(email['from'], queue_id, email['subject'])
+	save_message(email)
+	link_message_ticket(email['message-id'],ticket_id)
 
 def set_status(ticket_id, status_name):
 	query = "UPDATE Tickets SET Status = (SELECT StatusID FROM Status WHERE Name=? LIMIT 1) WHERE TicketID= ?"
