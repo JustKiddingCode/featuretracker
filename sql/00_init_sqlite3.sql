@@ -67,4 +67,5 @@ INSERT INTO Status (Name) VALUES
 ('Open'), 
 ('Depending'),
 ('Closed'),
-('Taken');
+('Taken'),
+('Ignored');

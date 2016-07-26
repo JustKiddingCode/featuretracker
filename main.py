@@ -18,6 +18,8 @@ sendmail_opts = []
 sendmail = [sendmail_command] + sendmail_opts
 
 
+emailFrom = "Featuretracker <featuretracker@fsmi.uka.de>"
+
 def list_ticket(status_id,queue_id):
 	query = "SELECT Originator, opened, Subject FROM Tickets WHERE Queue = ? AND Status= ?"
 	database.cursor.execute(query, (queue_id,status_id))
@@ -139,32 +141,65 @@ def check_command(email):
 	
 	logger.debug(firstLine)
 
+
+def list_open_tickets(queue_id):
+	query = "SELECT StatusID From Status WHERE Name=?"
+	database.cursor.execute(query, ("Open",))
+	status_id = database.cursor.fetchone()[0]
+	email_body = list_ticket(status_id, queue_id)
+
+	return email_body
+
+def write_email(content, to, subject, from_mail = emailFrom):
+	msg = MIMEText(email_body)
+	msg['From'] = "Featuretracker <featuretracker@fsmi.uka.de>"
+	msg['To'] = to
+	msg['Subject'] = "Open Tickets"	
+		
+	p = Popen(sendmail, stdin=PIPE, universal_newlines=True)
+	p.communicate(msg.as_string())
+			
+
+
 def process_email_no_references(email):
 		queue_id = search_queue_by_email(email)	
 		if (queue_id == -1):
+			if (email['Subject'].startswith("list open")):
+				queue_name = email['Subject'][10:]
+				query = "SELECT QueueID FROM Queue WHERE Name=?"
+				database.cursor.execute(query, (queue_name, ))
+				
+				res = database.cursor.fetchone()
+
+				if (res != None):
+					queue_id = res[0]
+					
+					if (check_admin(strip_to_address(email['from']), queue_id)):
+				
+						email_body = list_open/tickets(queue_id)
+						# get e-mail to.
+						query = "SELECT value FROM Message_to_Queue WHERE identifier='to' and QueueID = ?"
+						database.cursor.execute(query, (queue_id, ))
+						to = database.cursor.fetchone()[0]
+				
+						write_email(email_body, to, "Open Tickets")
+
+						return
+
 			logger.debug("Failed to determine queue. Exit")
 			sys.exit()
 		
 		if (check_admin(strip_to_address(email['from']), queue_id)):
 			if (email['Subject'] == "list open"):
-				query = "SELECT StatusID From Status WHERE Name=?"
-				database.cursor.execute(query, ("Open",))
-				status_id = database.cursor.fetchone()[0]
-				email_body = list_ticket(status_id, queue_id)
-
+				
+				email_body = list_open/tickets(queue_id)
 				# get e-mail to.
 				query = "SELECT value FROM Message_to_Queue WHERE identifier='to' and QueueID = ?"
 				database.cursor.execute(query, (queue_id, ))
 				to = database.cursor.fetchone()[0]
-
-				msg = MIMEText(email_body)
-				msg['From'] = "Featuretracker <featuretracker@fsmi.uka.de>"
-				msg['To'] = to
-				msg['Subject'] = "Open Tickets"	
 				
-				p = Popen(sendmail, stdin=PIPE, universal_newlines=True)
-				p.communicate(msg.as_string())
-			
+				write_email(email_body, to, "Open Tickets")
+				
 
 				return
 
@@ -175,6 +210,10 @@ def process_email_no_references(email):
 		save_message(email)
 		link_message_ticket(email['message-id'],ticket_id)
 
+def set_status(ticket_id, status_name):
+	query = "UPDATE Tickets SET Status = (SELECT StatusID FROM Status WHERE Name=? LIMIT 1) WHERE TicketID= ?"
+	database.cursor.execute(query, (status_name, ticket_id ))
+	
 def process_email_with_ticket(email, ticket_id):
 	logger.debug("Ticket-Id found %s" % ticket_id)
 	queue_id = get_queue_id_from_ticket_id(ticket_id)
@@ -182,6 +221,8 @@ def process_email_with_ticket(email, ticket_id):
 
 	if (check_admin(strip_to_address(email['from']), queue_id)):
 		logger.debug ("An admin is answering")
+
+
 		if (check_autoclose(queue_id)):
 			logger.debug("Auto close is activated for the queue")
 			query = "SELECT Originator FROM Tickets WHERE TicketID = ?"
@@ -191,12 +232,11 @@ def process_email_with_ticket(email, ticket_id):
 
 			if (originator in email['To']) :
 				logger.info("Auto close ticket.")
-				query = "UPDATE Tickets SET Status = (SELECT StatusID FROM Status WHERE Name='Closed' LIMIT 1) WHERE TicketID= ?"
-				database.cursor.execute(query, (ticket_id, ))
-		
-		if (check_command(email)):
-			pass
-
+				set_status(ticket_id, 'Closed')
+		if (get_command(email) == "ignore"):
+			logger.info("Command received to ignore ticket.")
+			set_status(ticket_id, 'Ignored')
+	
 	
 	logger.debug("Add message to ticket")
 	save_message(email)
