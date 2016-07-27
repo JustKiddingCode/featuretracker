@@ -9,8 +9,14 @@ from subprocess import Popen, PIPE
 import database
 #import commands
 
+# Really sendmail
+
 #sendmail_commad = "/usr/sbin/sendmail"
 #sendmail_opts = ["-t", "-oi"]
+
+
+
+# For Testing, just print out
 
 sendmail_command = "/bin/cat"
 sendmail_opts = []
@@ -160,7 +166,19 @@ def write_email(content, to, subject, from_mail = emailFrom):
 	p = Popen(sendmail, stdin=PIPE, universal_newlines=True)
 	p.communicate(msg.as_string())
 			
+def check_noticket(mail, queue_id):
+	
+	query = "SELECT Email_Regex FROM Queue_NoTicket WHERE QueueID = ?"
+	database.cursor.execute(query, (queue_id, ))
+	
+	logger.debug("(no ticket) Testing for mail adress %s" % from_email) 
+	for line in database.cursor.fetchall():
+		regex = line[0]
+		logger.debug("Found regex: %s" % regex)
+		if (re.match(regex, from_email)):
+			return True
 
+	return False;
 
 def process_email_no_references(email):
 	queue_id = search_queue_by_email(email)	
@@ -204,7 +222,9 @@ def process_email_no_references(email):
 
 			return
 
-
+	if (check_noticket(strip_to_address(email['from']), queue_id):
+		logger.info("Ticket from no ticket address. Don't create ticket")
+		return
 
 	logger.info("Create new ticket")
 	ticket_id = create_ticket(email['from'], queue_id, email['subject'])
