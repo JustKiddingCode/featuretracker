@@ -298,7 +298,7 @@ def process_email():
 if __name__ == "__main__":
 
 	logger = logging.getLogger("featuretracker")
-	logging.basicConfig(level=logging.DEBUG)
+	logging.basicConfig(level=logging.DEBUG,filename="log")
 	process_email()
 
 	database.connection.commit()
