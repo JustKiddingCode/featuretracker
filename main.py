@@ -13,19 +13,17 @@ import database
 
 # Really sendmail
 
-#sendmail_commad = "/usr/sbin/sendmail"
-#sendmail_opts = ["-t", "-oi"]
 
-base_dir = "/opt/featuretracker"
-
+base_dir = "/opt/featuretracker/"
+base_dir = ""
 
 # For Testing, just print out
 
 sendmail_command = "/usr/sbin/sendmail"
 sendmail_opts = ["-t", "-oi"]
 
-#sendmail_command = "/bin/cat"
-#sendmail_opts = []
+sendmail_command = "/bin/cat"
+sendmail_opts = []
 
 sendmail = [sendmail_command] + sendmail_opts
 
@@ -140,7 +138,7 @@ def check_admin(from_email, queue_id):
 		if (re.match(regex, from_email)):
 			return True
 
-	return False;
+	return False
 
 def check_autoclose(queue_id):
 	query = "SELECT autoclose FROM Queue WHERE QueueID = ?"
@@ -168,10 +166,10 @@ def list_open_tickets(queue_id):
 	return email_body
 
 def write_email(content, to, subject, from_mail = emailFrom):
-	msg = MIMEText(email_body)
-	msg['From'] = "Featuretracker <featuretracker@fsmi.uka.de>"
+	msg = MIMEText(content)
+	msg['From'] = from_mail
 	msg['To'] = to
-	msg['Subject'] = "Open Tickets"	
+	msg['Subject'] = "Featuretracker " + subject	
 		
 	p = Popen(sendmail, stdin=PIPE, universal_newlines=True)
 	p.communicate(msg.as_string())
@@ -188,7 +186,7 @@ def check_noticket(from_mail, queue_id):
 		if (re.match(regex, from_mail)):
 			return True
 
-	return False;
+	return False
 
 def process_email_no_references(email):
 	queue_id = search_queue_by_email(email)	
@@ -264,7 +262,7 @@ def process_email_with_ticket(email, ticket_id):
 			if (originator in email['To']) :
 				logger.info("Auto close ticket.")
 				set_status(ticket_id, 'Closed')
-		if (get_command(email) == "ignore"):
+		if (check_command(email) == "ignore"):
 			logger.info("Command received to ignore ticket.")
 			set_status(ticket_id, 'Ignored')
 	
@@ -308,7 +306,7 @@ def process_email():
 if __name__ == "__main__":
 
 	logger = logging.getLogger("featuretracker")
-	logging.basicConfig(level=logging.DEBUG,filename=base_dir + "/log")
+	logging.basicConfig(level=logging.DEBUG,filename=base_dir + "log")
 	process_email()
 
 	database.connection.commit()

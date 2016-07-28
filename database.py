@@ -1,14 +1,15 @@
 import sqlite3
 
 #base dir
-base_dir = "/opt/featuretracker"
+base_dir = "/opt/featuretracker/"
+base_dir = ""
 
 # Database Switch
 database = "sqlite"
 
 
 # Sqlite3 Settings
-sqlite3_file = base_dir + "/testing.db"
+sqlite3_file = base_dir + "testing.db"
 
 
 
