@@ -14,7 +14,7 @@ On Wed, Nov 18, 2009 at 1:45 PM, Alexander Botero-Lowry
 > for getline do you mind trying #define _GNU_SOURCE 1
 > before #include <stdio.h> in the offending files? The FreeBSD man pages
 > mentions that as a way of enabling the GNU version of getline().
-
+ÖÖÖÖÖÖÖÖÖÄÜÖÄÜÖÄ
 It seems even _GNU_SOURCE is defined, getline is still not present.
 the C lib in Mac OS X simply doesn't have it. See also [1].
 

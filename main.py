@@ -4,6 +4,8 @@ import email as e
 import sys
 import re
 import logging
+import io
+
 
 from email.mime.text import MIMEText
 from subprocess import Popen, PIPE
@@ -273,9 +275,14 @@ def process_email_with_ticket(email, ticket_id):
 
 
 def process_email():
-#	email = Parser().parse(sys.stdin)
-	email = e.message_from_file(sys.stdin)
-
+	try: 
+	#	email = Parser().parse(sys.stdin)
+	#	input_stream = io.TextIOWrapper(sys.stdin.buffer, encoding='ISO-8859-1')
+	#	email = e.message_from_file(input_stream)
+		email = e.message_from_file(sys.stdin)
+	except UnicodeDecodeError:
+		logger.warning("Unicode Decode error. exit")
+		sys.exit()
 	logger.debug(email.keys())
 	
 	if ("Message-ID" not in email.keys()):
