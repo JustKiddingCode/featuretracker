@@ -1,3 +1,5 @@
+#!/usr/bin/python3
+
 from email.parser import Parser
 import sys
 import re
@@ -14,12 +16,16 @@ import database
 #sendmail_commad = "/usr/sbin/sendmail"
 #sendmail_opts = ["-t", "-oi"]
 
+base_dir = "/opt/featuretracker"
 
 
 # For Testing, just print out
 
-sendmail_command = "/bin/cat"
-sendmail_opts = []
+sendmail_command = "/usr/sbin/sendmail"
+sendmail_opts = ["-t", "-oi"]
+
+#sendmail_command = "/bin/cat"
+#sendmail_opts = []
 
 sendmail = [sendmail_command] + sendmail_opts
 
@@ -79,6 +85,7 @@ def link_message_ticket(message_id, ticket_id):
 	database.cursor.execute(query, (ticket_id, message_id))
 
 def search_queue_by_email(email):
+	logger.debug("Search queue by email, email_to: %s" % (email['To'], ))
 	# TO
 	query = "SELECT QueueID FROM Message_to_Queue WHERE identifier='to' and value = ?"
 
@@ -89,6 +96,8 @@ def search_queue_by_email(email):
 	return val[0]
 
 def create_ticket(originator, queue_id, subject):
+	logger.debug("Create ticket %s, %s %s " % (originator, queue_id, subject))
+
 	# Get open status id
 	query = "SELECT StatusID FROM Status WHERE Name = 'Open'"
 	database.cursor.execute(query)
@@ -120,13 +129,14 @@ def strip_to_address(from_email):
 
 
 def check_admin(from_email, queue_id):
+	logger.debug("Check Admin %s " % (from_email, ))
 	query = "SELECT Email_Regex FROM Queue_Admin WHERE QueueID = ?"
 	database.cursor.execute(query, (queue_id, ))
 	
-	logger.debug("Testing for mail adress %s" % from_email) 
+	logger.debug("Testing for mail adress %s" % (from_email, )) 
 	for line in database.cursor.fetchall():
 		regex = line[0]
-		logger.debug("Found regex: %s" % regex)
+		logger.debug("Found regex: %s" % (regex, ))
 		if (re.match(regex, from_email)):
 			return True
 
@@ -166,16 +176,16 @@ def write_email(content, to, subject, from_mail = emailFrom):
 	p = Popen(sendmail, stdin=PIPE, universal_newlines=True)
 	p.communicate(msg.as_string())
 			
-def check_noticket(mail, queue_id):
+def check_noticket(from_mail, queue_id):
 	
 	query = "SELECT Email_Regex FROM Queue_NoTicket WHERE QueueID = ?"
 	database.cursor.execute(query, (queue_id, ))
 	
-	logger.debug("(no ticket) Testing for mail adress %s" % from_email) 
+	logger.debug("(no ticket) Testing for mail adress %s" % (from_mail, )) 
 	for line in database.cursor.fetchall():
 		regex = line[0]
-		logger.debug("Found regex: %s" % regex)
-		if (re.match(regex, from_email)):
+		logger.debug("Found regex: %s" % (regex, ))
+		if (re.match(regex, from_mail)):
 			return True
 
 	return False;
@@ -210,7 +220,7 @@ def process_email_no_references(email):
 	
 	if (check_admin(strip_to_address(email['from']), queue_id)):
 		if (email['Subject'] == "list open"):
-			
+			logger.debug("List open tickets requested, writing email")	
 			email_body = list_open_tickets(queue_id)
 			# get e-mail to.
 			query = "SELECT value FROM Message_to_Queue WHERE identifier='to' and QueueID = ?"
@@ -236,7 +246,7 @@ def set_status(ticket_id, status_name):
 	database.cursor.execute(query, (status_name, ticket_id ))
 	
 def process_email_with_ticket(email, ticket_id):
-	logger.debug("Ticket-Id found %s" % ticket_id)
+	logger.debug("Ticket-Id found %s" % (ticket_id, ))
 	queue_id = get_queue_id_from_ticket_id(ticket_id)
 	logger.debug("Check if email is from queue-admin")
 
@@ -284,7 +294,7 @@ def process_email():
 		process_email_no_references(email)
 
 	else:
-		logger.debug("References found %s" % references)
+		logger.debug("References found %s" % (references, ))
 		logger.debug("Search ticket id for references")
 		ticket_id = search_ticket_id_by_references(references)
 
@@ -298,7 +308,7 @@ def process_email():
 if __name__ == "__main__":
 
 	logger = logging.getLogger("featuretracker")
-	logging.basicConfig(level=logging.DEBUG,filename="log")
+	logging.basicConfig(level=logging.DEBUG,filename=base_dir + "/log")
 	process_email()
 
 	database.connection.commit()
