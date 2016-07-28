@@ -277,9 +277,9 @@ def process_email_with_ticket(email, ticket_id):
 def process_email():
 	try: 
 	#	email = Parser().parse(sys.stdin)
-	#	input_stream = io.TextIOWrapper(sys.stdin.buffer, encoding='ISO-8859-1')
-	#	email = e.message_from_file(input_stream)
-		email = e.message_from_file(sys.stdin)
+		input_stream = io.TextIOWrapper(sys.stdin.buffer, errors='ignore')
+		email = e.message_from_file(input_stream)
+	#	email = e.message_from_file(sys.stdin)
 	except UnicodeDecodeError:
 		logger.warning("Unicode Decode error. exit")
 		sys.exit()
