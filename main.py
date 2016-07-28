@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-from email.parser import Parser
+import email as e
 import sys
 import re
 import logging
@@ -273,7 +273,8 @@ def process_email_with_ticket(email, ticket_id):
 
 
 def process_email():
-	email = Parser().parse(sys.stdin)
+#	email = Parser().parse(sys.stdin)
+	email = e.message_from_file(sys.stdin)
 
 	logger.debug(email.keys())
 	
