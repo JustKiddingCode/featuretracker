@@ -222,7 +222,7 @@ def process_email_no_references(email):
 
 			return
 
-	if (check_noticket(strip_to_address(email['from']), queue_id):
+	if (check_noticket(strip_to_address(email['from']), queue_id)):
 		logger.info("Ticket from no ticket address. Don't create ticket")
 		return
 
