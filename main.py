@@ -13,6 +13,32 @@ from subprocess import Popen, PIPE
 import database
 import config
 
+####################################
+### COMMANDS WITH DATABASE ACCESS###
+###       AND COMPLETE EMAIL     ###
+####################################
+
+
+def save_message(email):
+	query = "INSERT INTO Emails (MessageID, Content) VALUES (?,?)"
+	database.cursor.execute(query, (email['message-id'], str(email)))
+
+
+def search_queue_by_email(email):
+	LOGGER.debug("Search queue by email, email_to: %s", email['To'])
+	# TO
+	query = "SELECT QueueID FROM Message_to_Queue WHERE identifier='to' and value = ?"
+
+	database.cursor.execute(query, (email['To'], ))
+	val = database.cursor.fetchone()
+	if (val is None):
+		return -1
+	return val[0]
+
+####################################
+### COMMANDS WITH DATABASE ACCESS###
+####################################
+
 
 def list_ticket(status_id, queue_id):
 	query = "SELECT Originator, opened, Subject FROM Tickets WHERE Queue = ? AND Status= ?"
@@ -26,6 +52,15 @@ def list_ticket(status_id, queue_id):
 	return ticket_list
 
 
+def list_open_tickets(queue_id):
+	query = "SELECT StatusID From Status WHERE Name=?"
+	database.cursor.execute(query, ("Open",))
+	status_id = database.cursor.fetchone()[0]
+	email_body = list_ticket(status_id, queue_id)
+
+	return email_body
+
+	
 def search_ticket_id_by_references(references):
 	query = "Select TicketID FROM Link_Ticket_Message WHERE MessageID in (%s)" \
 		% ','.join('?' * len(references))
@@ -39,16 +74,6 @@ def search_ticket_id_by_references(references):
 		return val[0]
 
 
-def get_references(email):
-	search = []
-	if ("In-Reply-To" in email.keys()):
-		search.append(email['In-Reply-To'])
-
-	if ("References" in email.keys()):
-		search += email['References'].split()
-
-	return search
-
 def check_existence(message_id):
 	query = "SELECT Count(*) FROM Emails WHERE MessageID = ?"
 	database.cursor.execute(query, (message_id, ))
@@ -58,25 +83,10 @@ def check_existence(message_id):
 		LOGGER.debug("E-Mail already in Database. Exit")
 		sys.exit()
 
-def save_message(email):
-	query = "INSERT INTO Emails (MessageID, Content) VALUES (?,?)"
-	database.cursor.execute(query, (email['message-id'], str(email)))
-
 
 def link_message_ticket(message_id, ticket_id):
 	query = "INSERT INTO Link_Ticket_Message (TicketID, MessageID) VALUES (?,?)"
 	database.cursor.execute(query, (ticket_id, message_id))
-
-def search_queue_by_email(email):
-	LOGGER.debug("Search queue by email, email_to: %s", email['To'])
-	# TO
-	query = "SELECT QueueID FROM Message_to_Queue WHERE identifier='to' and value = ?"
-
-	database.cursor.execute(query, (email['To'], ))
-	val = database.cursor.fetchone()
-	if (val is None):
-		return -1
-	return val[0]
 
 def create_ticket(originator, queue_id, subject):
 	LOGGER.debug("Create ticket %s, %s %s ", originator, queue_id, subject)
@@ -107,9 +117,6 @@ def get_queue_id_from_ticket_id(ticket_id):
 
 	return queue_id
 
-def strip_to_address(from_email):
-	# output substring between < >
-	return from_email[from_email.find("<")+1:from_email.find(">")]
 
 
 def check_admin(from_email, queue_id):
@@ -133,32 +140,6 @@ def check_autoclose(queue_id):
 	val = database.cursor.fetchone()
 	return (val[0] == 1)
 
-def check_command(email):
-	if (email.is_multipart()):
-		first_line = email.get_payload(0).as_string().splitlines()[0]
-	else:
-		first_line = email.get_payload().splitlines()[0]
-
-	LOGGER.debug(first_line)
-
-	return first_line
-
-def list_open_tickets(queue_id):
-	query = "SELECT StatusID From Status WHERE Name=?"
-	database.cursor.execute(query, ("Open",))
-	status_id = database.cursor.fetchone()[0]
-	email_body = list_ticket(status_id, queue_id)
-
-	return email_body
-
-def write_email(content, to, subject, from_mail=config.EMAIL_FROM):
-	msg = MIMEText(content)
-	msg['From'] = from_mail
-	msg['To'] = to
-	msg['Subject'] = "Featuretracker " + subject
-
-	process = Popen(config.SENDMAIL, stdin=PIPE, universal_newlines=True)
-	process.communicate(msg.as_string())
 
 def check_noticket(from_mail, queue_id):
 
@@ -179,6 +160,50 @@ def set_status(ticket_id, status_name):
 	query = ("UPDATE Tickets SET Status = (SELECT StatusID FROM Status "
 		"WHERE Name=? LIMIT 1) WHERE TicketID= ?")
 	database.cursor.execute(query, (status_name, ticket_id))
+
+#######################################
+### COMMANDS WITHOUT DATABASE ACCESS###
+#######################################
+
+def get_references(email):
+	search = []
+	if ("In-Reply-To" in email.keys()):
+		search.append(email['In-Reply-To'])
+
+	if ("References" in email.keys()):
+		search += email['References'].split()
+
+	return search
+
+def strip_to_address(from_email):
+	# output substring between < >
+	return from_email[from_email.find("<")+1:from_email.find(">")]
+
+
+def check_command(email):
+	if (email.is_multipart()):
+		first_line = email.get_payload(0).as_string().splitlines()[0]
+	else:
+		first_line = email.get_payload().splitlines()[0]
+
+	LOGGER.debug(first_line)
+
+	return first_line
+
+
+def write_email(content, to, subject, from_mail=config.EMAIL_FROM):
+	msg = MIMEText(content)
+	msg['From'] = from_mail
+	msg['To'] = to
+	msg['Subject'] = "Featuretracker " + subject
+
+	process = Popen(config.SENDMAIL, stdin=PIPE, universal_newlines=True)
+	process.communicate(msg.as_string())
+
+
+###################################
+###     PROCESSING COMMANDS     ###
+###################################
 
 def process_email_no_references(email):
 	queue_id = search_queue_by_email(email)
