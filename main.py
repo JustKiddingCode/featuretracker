@@ -13,6 +13,18 @@ from subprocess import Popen, PIPE
 import database
 import config
 
+
+####################################
+###          Datatypes etc       ###
+####################################
+
+def enum(*args):
+	enums = dict(zip(args, range(len(args))))
+	return type('Enum', (), enums)
+
+Commands = enum('LIST', 'MERGE')
+
+
 ####################################
 ### COMMANDS WITH DATABASE ACCESS###
 ###       AND COMPLETE EMAIL     ###
@@ -285,10 +297,10 @@ def process_email_with_ticket(email, ticket_id):
 	link_message_ticket(email['message-id'], ticket_id)
 
 
-def process_email():
+def process_email(stream=sys.stdin):
 	try:
 	#	email = Parser().parse(sys.stdin)
-		input_stream = io.TextIOWrapper(sys.stdin.buffer, errors='ignore')
+		input_stream = io.TextIOWrapper(stream.buffer, errors='ignore')
 		email = e.message_from_file(input_stream)
 	#	email = e.message_from_file(sys.stdin)
 	except UnicodeDecodeError:
