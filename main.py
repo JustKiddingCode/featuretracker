@@ -22,7 +22,7 @@ def enum(*args):
 	enums = dict(zip(args, range(len(args))))
 	return type('Enum', (), enums)
 
-errors = enum('NO_MESSAGE_ID', 'ENCODING','NO_QUEUE')
+errors = enum('NO_MESSAGE_ID', 'ENCODING','NO_QUEUE', 'ALREADY_PROCESSED_EMAIL')
 
 
 ####################################
@@ -307,24 +307,24 @@ def process_email(stream=sys.stdin):
 	#	email = e.message_from_file(sys.stdin)
 	except UnicodeDecodeError:
 		LOGGER.warning("Unicode Decode error. exit")
-		return
+		return errors.ENCODING
 
 	LOGGER.debug(email.keys())
 
 	if ("Message-ID" not in email.keys()):
 		LOGGER.debug("no message id in mail. exit")
-		return
+		return errors.NO_MESSAGE_ID
+
 	LOGGER.info("Processing %s", email['Message-ID'])
 
 	if check_existence(email['Message-ID']) == True:
-		return
+		return errors.ALREADY_PROCESSED_EMAIL
 
 	# get references
 	references = get_references(email)
 
 	if (references == []):
 		LOGGER.debug("No references found.")
-
 		process_email_no_references(email)
 
 	else:
