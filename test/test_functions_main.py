@@ -3,10 +3,12 @@ from email.parser import Parser
 from tempfile import mkstemp
 
 from main import *
+import logging
 
 import subprocess
 
 import sqlite3
+
 
 class TestUM(unittest.TestCase):
 
@@ -16,7 +18,6 @@ class TestUM(unittest.TestCase):
 		init_sql = open("sql/00_init_sqlite3.sql", 'r')
 
 		initstr = ["sqlite3",tmpfile]
-		print(initstr)
 		#init database
 		p = subprocess.Popen(initstr, stdin=init_sql)	
 		p.wait()
@@ -25,10 +26,17 @@ class TestUM(unittest.TestCase):
 		database.cursor = database.connection.cursor()
 
 
-		# add ticket
+		# add queue
 		database.cursor.execute("INSERT INTO Queue ( QueueID, Name, autoclose ) VALUES (1, 'Testing', 0)")
 		database.cursor.execute("INSERT INTO Queue ( QueueID, Name, autoclose ) VALUES (2, 'Testing Second', 1)")
 
+		logging.basicConfig(level=logging.DEBUG)
+
+	def test_process_email(self):
+		f = open("test/data/43:2,")
+		# more setup of database
+		process_email(stream=f)
+		# TODO: Actual testing
 
 	def test_check_autoclose(self):
 		self.assertEqual(check_autoclose(1), False)	
