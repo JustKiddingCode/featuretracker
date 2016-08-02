@@ -22,7 +22,7 @@ def enum(*args):
 	enums = dict(zip(args, range(len(args))))
 	return type('Enum', (), enums)
 
-Commands = enum('LIST', 'MERGE')
+errors = enum('NO_MESSAGE_ID', 'ENCODING','NO_QUEUE')
 
 
 ####################################
@@ -245,7 +245,7 @@ def process_email_no_references(email):
 					return
 
 		LOGGER.debug("Failed to determine queue. Exit")
-		return
+		return errors.NO_QUEUE
 
 	if (check_admin(strip_to_address(email['from']), queue_id)):
 		if (email['Subject'] == "list open"):
