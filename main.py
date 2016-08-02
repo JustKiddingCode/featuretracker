@@ -93,7 +93,8 @@ def check_existence(message_id):
 
 	if (count > 0):
 		LOGGER.debug("E-Mail already in Database. Exit")
-		sys.exit()
+		return True
+	return False
 
 
 def link_message_ticket(message_id, ticket_id):
@@ -109,7 +110,8 @@ def create_ticket(originator, queue_id, subject):
 	val = database.cursor.fetchone()
 	if (val is None):
 		LOGGER.debug("Could not determine status id for Status Open. Exit.")
-		sys.exit()
+		return
+
 	status_id = val[0]
 
 	query = ("INSERT INTO Tickets (Status, Originator, Queue, Subject, opened) "
@@ -243,7 +245,7 @@ def process_email_no_references(email):
 					return
 
 		LOGGER.debug("Failed to determine queue. Exit")
-		sys.exit()
+		return
 
 	if (check_admin(strip_to_address(email['from']), queue_id)):
 		if (email['Subject'] == "list open"):
@@ -305,14 +307,17 @@ def process_email(stream=sys.stdin):
 	#	email = e.message_from_file(sys.stdin)
 	except UnicodeDecodeError:
 		LOGGER.warning("Unicode Decode error. exit")
-		sys.exit()
+		return
+
 	LOGGER.debug(email.keys())
 
 	if ("Message-ID" not in email.keys()):
 		LOGGER.debug("no message id in mail. exit")
-		sys.exit()
+		return
 	LOGGER.info("Processing %s", email['Message-ID'])
-	check_existence(email['Message-ID'])
+
+	if check_existence(email['Message-ID']) == True:
+		return
 
 	# get references
 	references = get_references(email)
@@ -334,9 +339,11 @@ def process_email(stream=sys.stdin):
 			process_email_no_references(email)
 
 
+
+LOGGER = logging.getLogger("featuretracker")
+
 if __name__ == "__main__":
 
-	LOGGER = logging.getLogger("featuretracker")
 	logging.basicConfig(level=logging.DEBUG, filename=config.BASE_DIR + "log")
 	process_email()
 
